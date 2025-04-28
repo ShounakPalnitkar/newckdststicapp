@@ -222,10 +222,8 @@
             const riskMessage = document.getElementById('risk-message');
             const recommendations = document.getElementById('recommendations');
 
-            riskMessage.innerHTML = `
-                <p>Your calculated CKD risk score is <strong>${riskScore}/20</strong>.</p>
-                <p>Risk Level: <span class="risk-${riskLevel.toLowerCase()}">${riskLevel}</span></p>
-            `;
+            riskMessage.innerHTML = `Your calculated CKD risk score is <strong>${riskScore}/20</strong>.<br>
+                                    Risk Level: <span class="risk-${riskLevel.toLowerCase()}">${riskLevel}</span>`;
 
             if (riskLevel === 'High') {
                 recommendations.innerHTML = `
