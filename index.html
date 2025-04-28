@@ -14,6 +14,7 @@
             padding: 20px;
             background-color: #f5f9fc;
         }
+        
         header {
             background-color: #1a6fc9;
             color: white;
@@ -22,9 +23,11 @@
             margin-bottom: 30px;
             text-align: center;
         }
+        
         h1, h2 {
             color: #1a6fc9;
         }
+        
         .form-section, #result, #visualizations {
             background-color: white;
             padding: 25px;
@@ -32,11 +35,13 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             margin-bottom: 20px;
         }
+        
         label {
             display: block;
             margin: 15px 0 5px;
             font-weight: 600;
         }
+        
         input, select {
             width: 100%;
             padding: 10px;
@@ -44,6 +49,7 @@
             border-radius: 4px;
             font-size: 16px;
         }
+        
         button {
             background-color: #1a6fc9;
             color: white;
@@ -55,30 +61,37 @@
             font-size: 16px;
             transition: background-color 0.3s;
         }
+        
         button:hover {
             background-color: #145da0;
         }
+        
         .hidden {
             display: none;
         }
+        
         .risk-high {
             color: #e74c3c;
             font-weight: bold;
         }
+        
         .risk-medium {
             color: #f39c12;
             font-weight: bold;
         }
+        
         .risk-low {
             color: #27ae60;
             font-weight: bold;
         }
+        
         footer {
             text-align: center;
             margin-top: 30px;
             font-size: 14px;
             color: #666;
         }
+        
         @media (max-width: 600px) {
             .visualization-grid {
                 grid-template-columns: 1fr;
@@ -105,6 +118,17 @@
                 <option value="female">Female</option>
             </select>
             
+            <label for="race">Race/Ethnicity:</label>
+            <select id="race" name="race" required>
+                <option value="">Select...</option>
+                <option value="white">White/Caucasian</option>
+                <option value="black">Black/African American</option>
+                <option value="hispanic">Hispanic/Latino</option>
+                <option value="asian">Asian</option>
+                <option value="native">Native American</option>
+                <option value="other">Other</option>
+            </select>
+            
             <label for="hypertension">Do you have hypertension (high blood pressure)?</label>
             <select id="hypertension" name="hypertension" required>
                 <option value="">Select...</option>
@@ -122,6 +146,9 @@
                 <option value="prediabetes">Prediabetes</option>
             </select>
             
+            <label for="duration">If diabetic, how many years since diagnosis?</label>
+            <input type="number" id="duration" name="duration" min="0" max="100" value="0" disabled>
+            
             <label for="bmi">Body Mass Index (BMI):</label>
             <input type="number" id="bmi" name="bmi" min="15" max="60" step="0.1" required>
             
@@ -132,38 +159,91 @@
     <section id="result" class="hidden">
         <h2>Your CKD Risk Assessment Results</h2>
         <div id="risk-message"></div>
+        <div id="recommendations"></div>
         <button id="reset-btn">Start New Assessment</button>
     </section>
 
     <footer>
-        <p><strong>Disclaimer:</strong> This tool is for informational purposes only and is not a substitute for professional medical advice.</p>
+        <p><strong>Disclaimer:</strong> This tool is for informational purposes only and is not a substitute for professional medical advice, diagnosis, or treatment.</p>
     </footer>
 
     <script>
         const form = document.getElementById('ckd-form');
+        const durationField = document.getElementById('duration');
+
+        document.getElementById('diabetes').addEventListener('change', function() {
+            if (this.value === 'type1' || this.value === 'type2') {
+                durationField.disabled = false;
+            } else {
+                durationField.disabled = true;
+                durationField.value = '0';
+            }
+        });
+
         form.addEventListener('submit', function(e) {
             e.preventDefault();
 
             const age = parseInt(document.getElementById('age').value);
             const sex = document.getElementById('sex').value;
+            const race = document.getElementById('race').value;
             const hypertension = document.getElementById('hypertension').value;
             const diabetes = document.getElementById('diabetes').value;
+            const duration = parseInt(document.getElementById('duration').value) || 0;
             const bmi = parseFloat(document.getElementById('bmi').value);
 
             let riskScore = 0;
 
-            if (age > 60) riskScore += 3;
-            if (hypertension === 'yes') riskScore += 3;
-            if (diabetes === 'type2') riskScore += 4;
-            if (bmi > 30) riskScore += 2;
+            // Risk calculation logic
+            if (age >= 60) riskScore += 3;
+            else if (age >= 50) riskScore += 2;
+            else if (age >= 40) riskScore += 1;
 
+            if (race === 'black') riskScore += 1;
+
+            if (hypertension === 'yes') riskScore += 2;
+            else if (hypertension === 'borderline') riskScore += 1;
+
+            if (diabetes === 'type1') riskScore += 4;
+            else if (diabetes === 'type2') riskScore += 3;
+            else if (diabetes === 'prediabetes') riskScore += 1;
+
+            if (duration >= 10) riskScore += 2;
+            else if (duration >= 5) riskScore += 1;
+
+            if (bmi >= 30) riskScore += 1;
+
+            // Determine risk level
             let riskLevel = 'Low';
-            if (riskScore >= 8) riskLevel = 'High';
-            else if (riskScore >= 5) riskLevel = 'Moderate';
+            if (riskScore >= 10) riskLevel = 'High';
+            else if (riskScore >= 6) riskLevel = 'Moderate';
 
+            // Display results
             const resultSection = document.getElementById('result');
             const riskMessage = document.getElementById('risk-message');
-            riskMessage.innerHTML = `Risk Level: <span class="risk-${riskLevel.toLowerCase()}">${riskLevel}</span>`;
+            const recommendations = document.getElementById('recommendations');
+
+            riskMessage.innerHTML = `
+                <p>Your calculated CKD risk score is <strong>${riskScore}/20</strong>.</p>
+                <p>Risk Level: <span class="risk-${riskLevel.toLowerCase()}">${riskLevel}</span></p>
+            `;
+
+            if (riskLevel === 'High') {
+                recommendations.innerHTML = `
+                    <h3>Recommendations:</h3>
+                    <p>We strongly recommend consulting a healthcare provider for further tests (e.g., blood and urine tests).</p>
+                `;
+            } else if (riskLevel === 'Moderate') {
+                recommendations.innerHTML = `
+                    <h3>Recommendations:</h3>
+                    <p>Consider regular check-ups and monitoring your kidney health.</p>
+                `;
+            } else {
+                recommendations.innerHTML = `
+                    <h3>Recommendations:</h3>
+                    <p>Maintain a healthy lifestyle to reduce kidney disease risks.</p>
+                `;
+            }
+
             resultSection.classList.remove('hidden');
         });
 
